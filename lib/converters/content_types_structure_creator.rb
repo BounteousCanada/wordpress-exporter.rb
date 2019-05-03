@@ -23,7 +23,7 @@ module Contentful
       def create_fields(fields)
         fields.each_with_object([]) do |(field, value), results|
           results << {
-            name: create_field(field, value).capitalize,
+            name: create_field(field, value).tr('_',' ').split(/ |\_/).map(&:capitalize).join(" "),
             id: create_field(field, value),
             type: create_type_field(value),
             link_type: create_link_type_field(value),

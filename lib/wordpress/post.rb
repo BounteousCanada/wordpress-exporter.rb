@@ -25,76 +25,75 @@ module Contentful
 
         def extract_posts
           posts.each_with_object([]) do |post_xml, posts|
-            normalized_post = extract_data(post_xml)
-            write_json_to_file("#{settings.entries_dir}/post/#{post_id(post_xml)}.json", normalized_post)
-            posts << normalized_post
+              normalized_post = extract_data(post_xml)
+              write_json_to_file("#{settings.entries_dir}/post/#{post_id(post_xml)}.json", normalized_post)
+              posts << normalized_post
           end
         end
 
         def posts
-          xml.xpath('//item').to_a
+          xml.search("//item[child::wp:post_type[text()[contains(., 'post')]]]").to_a
         end
 
-        def extract_data(xml_post)
-          post_entry = basic_post_data(xml_post)
-          assign_content_elements_to_post(xml_post, post_entry)
+        def extract_data(post_xml)
+          post_entry = basic_post_data(post_xml)
+          assign_content_elements_to_post(post_xml, post_entry)
           post_entry
         end
 
-        def attachment(xml_post)
-          PostAttachment.new(xml_post, settings).attachment_extractor
+        def author(post_xml)
+          PostAuthor.new(xml, post_xml, settings).author_extractor
         end
 
-        def author(xml_post)
-          PostAuthor.new(xml, xml_post, settings).author_extractor
+        def tags(post_xml)
+          PostCategoryDomain.new(xml, post_xml, settings).extract_tags
         end
 
-        def tags(xml_post)
-          PostCategoryDomain.new(xml, xml_post, settings).extract_tags
+        def categories(post_xml)
+          PostCategoryDomain.new(xml, post_xml, settings).extract_categories
         end
 
-        def categories(xml_post)
-          PostCategoryDomain.new(xml, xml_post, settings).extract_categories
-        end
-
-        def basic_post_data(xml_post)
+        def basic_post_data(post_xml)
           {
-            id: post_id(xml_post),
-            title: title(xml_post),
-            wordpress_url: url(xml_post),
-            content: content(xml_post),
-            created_at: created_at(xml_post)
+            id: post_id(post_xml),
+            title: title(post_xml),
+            template: link_entry( {id: settings.contentful_post_template_id}),
+            url: slug(post_xml),
+            content: content(post_xml),
+            publish_date: created_at(post_xml)
           }
         end
 
-        def assign_content_elements_to_post(xml_post, post_entry)
-          attachment = attachment(xml_post)
-          tags = link_entry(tags(xml_post))
-          categories = link_entry(categories(xml_post))
-          post_entry.merge!(author: link_entry(author(xml_post)))
-          post_entry.merge!(attachment: link_asset(attachment)) unless attachment.nil?
+        def assign_content_elements_to_post(post_xml, post_entry)
+          tags = link_entry(tags(post_xml))
+          categories = link_entry(categories(post_xml))
+          post_entry.merge!(author: link_entry(author(post_xml)))
           post_entry.merge!(tags: tags) unless tags.empty?
           post_entry.merge!(categories: categories) unless categories.empty?
         end
 
-        def title(xml_post)
-          xml_post.xpath('title').text
+        def title(post_xml)
+          post_xml.xpath('title').text
         end
 
-        def url(xml_post)
-          xml_post.xpath('link').text
+        def url(post_xml)
+          post_xml.xpath('link').text
         end
 
-        def content(xml_post)
-          xml_post.xpath('content:encoded').text
+        def slug(post_xml)
+          url(post_xml).sub(/https?:\/\/[^\/]+\/(.*)$/, '\1').chomp('/')
         end
 
-        def created_at(xml_post)
-          ['wp:post_date', 'wp:post_date_gmt'].each do |date_field|
-            date_string = xml_post.xpath(date_field).text
-            return Date.strptime(date_string) unless date_string.empty?
+        def content(post_xml)
+          post_xml.xpath('content:encoded').text
+        end
+
+        def created_at(post_xml)
+          ['pubDate','wp:post_date', 'wp:post_date_gmt'].each do |date_field|
+            date_string = post_xml.xpath(date_field).text
+            return Date.parse(date_string).strftime unless date_string.empty?
           end
-          output_logger.warn "Post <#{post_id(xml_post)}> didn't have Creation Date - defaulting to #{Date.today}"
+          output_logger.warn "Post <#{post_id(post_xml)}> didn't have Creation Date - defaulting to #{Date.today}"
           Date.today
         end
       end

@@ -11,3 +11,6 @@ content_model_json: wordpress_settings/contentful_model.json
 converted_model_dir: wordpress_settings/contentful_structure.json
 
 contentful_structure_dir: wordpress_settings/default_contentful_structure.json
+
+contentful_hero_template_id: "<hero_template_id>"
+contentful_post_template_id: "<post_template_id>"

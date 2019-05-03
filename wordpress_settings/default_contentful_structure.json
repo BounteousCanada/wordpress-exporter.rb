@@ -5,27 +5,16 @@
     "description": null,
     "displayField": "title",
     "fields": {
-      "Authors": {
-        "id": "authors",
-        "type": "Array",
-        "link_type": "Entry",
+      "title": "Symbol",
+      "url": "Symbol",
+      "description": "Text",
+      "thumbnail": {
+        "id": "thumbnail",
+        "type": "Asset",
         "link": "Link"
       },
-      "Posts": {
-        "id": "posts",
-        "type": "Array",
-        "link_type": "Entry",
-        "link": "Link"
-      },
-      "title": "Text",
-      "Categories": {
-        "id": "categories",
-        "type": "Array",
-        "link_type": "Entry",
-        "link": "Link"
-      },
-      "Tags": {
-        "id": "tags",
+      "components": {
+        "id": "components",
         "type": "Array",
         "link_type": "Entry",
         "link": "Link"
@@ -38,21 +27,20 @@
     "description": null,
     "displayField": "display_name",
     "fields": {
-      "email": "Text",
-      "display_name": "Text",
-      "first_name": "Text",
-      "last_name": "Text",
-      "wordpress_login": "Text"
+      "email": "Symbol",
+      "display_name": "Symbol",
+      "first_name": "Symbol",
+      "last_name": "Symbol"
     }
   },
   "Tag": {
     "id": "tag",
     "name": "Tag",
     "description": null,
-    "displayField": "nicename",
+    "displayField": "display_name",
     "fields": {
-      "nicename": "Text",
-      "name": "Text"
+      "display_name": "Symbol",
+      "name": "Symbol"
     }
   },
   "Post": {
@@ -61,42 +49,60 @@
     "description": null,
     "displayField": "title",
     "fields": {
-      "title": "Text",
+      "title": "Symbol",
+      "template": {
+        "id": "template",
+        "link": "Link",
+        "type": "Entry"
+      },
       "content": "Text",
-      "Author": {
+      "author": {
         "id": "author",
         "link": "Link",
         "type": "Entry"
       },
-      "Tags": {
+      "tags": {
         "id": "tags",
         "type": "Array",
         "link_type": "Entry",
         "link": "Link"
       },
-      "Categories": {
+      "categories": {
         "id": "categories",
         "type": "Array",
         "link_type": "Entry",
         "link": "Link"
       },
-      "wordpress_url": "Text",
-      "Attachment": {
-        "id": "attachment",
-        "type": "Asset",
+      "publish_date": "Date"
+    }
+  },
+  "HeroBanner": {
+    "id": "heroBanner",
+    "name": "Hero Banner",
+    "description": null,
+    "displayField": "title",
+    "fields": {
+      "title": "Symbol",
+      "Template": {
+        "id": "template",
+        "type": "Entry",
         "link": "Link"
       },
-      "created_at": "Date"
+      "image": {
+        "id": "image",
+        "type": "Asset",
+        "link": "Link"
+      }
     }
   },
   "Category": {
     "id": "category",
     "name": "Category",
     "description": null,
-    "displayField": "name",
+    "displayField": "display_name",
     "fields": {
-      "nicename": "Text",
-      "name": "Text"
+      "display_name": "Symbol",
+      "name": "Symbol"
     }
   }
 }

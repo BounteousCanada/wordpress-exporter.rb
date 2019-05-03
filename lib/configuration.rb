@@ -7,6 +7,8 @@ module Contentful
                 :entries_dir,
                 :assets_dir,
                 :wordpress_xml,
+                :contentful_post_template_id,
+                :contentful_hero_template_id,
                 :settings
 
     def initialize(settings)
@@ -17,6 +19,9 @@ module Contentful
       @collections_dir = "#{data_dir}/collections"
       @entries_dir = "#{data_dir}/entries"
       @assets_dir = "#{data_dir}/assets"
+      @space_id = settings['space_id']
+      @contentful_post_template_id = settings['contentful_post_template_id']
+      @contentful_hero_template_id = settings['contentful_hero_template_id']
       @space_id = settings['space_id']
     end
 

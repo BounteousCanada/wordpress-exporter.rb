@@ -28,7 +28,7 @@ module Contentful
         def extracted_category(category)
           {
             id: id(category),
-            nicename: nice_name(category),
+            display_name: nice_name(category),
             name: name(category)
           }
         end

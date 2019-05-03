@@ -34,7 +34,6 @@ module Contentful
             display_name: display_name(author),
             first_name: first_name(author),
             last_name: last_name(author),
-            wordpress_login: login(author)
           }
         end
 
@@ -44,10 +43,6 @@ module Contentful
 
         def id(author)
           "author_#{author.xpath('wp:author_id').text}"
-        end
-
-        def login(author)
-          author.xpath('wp:author_login').text
         end
 
         def email(author)

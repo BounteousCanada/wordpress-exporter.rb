@@ -30,7 +30,7 @@ module Contentful
         def extracted_data(tag)
           {
             id: id(tag),
-            nicename: slug(tag),
+            display_name: slug(tag),
             name: name(tag)
           }
         end
