@@ -1,5 +1,7 @@
+require 'digest'
 require 'time'
 require 'logger'
+require 'csv'
 
 module Contentful
   module Exporter
@@ -69,6 +71,7 @@ module Contentful
         def extracted_data(post_xml)
           hero_id = hero_id(post_xml)
           {
+              id: Digest::MD5.hexdigest(blog_id(post_xml)),
               title: title(post_xml),
               description: excerpt(post_xml),
               url: slug(post_xml),
@@ -83,7 +86,7 @@ module Contentful
 
         def thumbnail_attachment(post_xml)
           thumbnail_id = thumbnail_id(post_xml)
-          if thumbnail_id != ''
+          if thumbnail_id != '' && !thumbnail_id.nil?
             thumbnail = xml.search("//item[child::wp:post_id[text()=#{thumbnail_id}]]").first
             Image.new(thumbnail, settings).attachment_extractor unless thumbnail.nil?
           end
@@ -104,8 +107,12 @@ module Contentful
 
         def hero_id(post_xml)
           post_id = thumbnail_id(post_xml)
-          hero = xml.search("//item[child::wp:post_id[text()=#{post_id}]]").first
-          hero ? "hero_banner_#{hero.xpath('wp:post_id').text}" : ''
+          if post_id != '' && !post_id.nil?
+            hero = xml.search("//item[child::wp:post_id[text()=#{post_id}]]").first
+            hero ? "hero_banner_#{hero.xpath('wp:post_id').text}" : ''
+          else
+            ''
+          end
         end
 
         def excerpt(post_xml)

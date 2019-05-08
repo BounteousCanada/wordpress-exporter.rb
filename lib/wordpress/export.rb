@@ -8,6 +8,7 @@ require_relative 'author'
 require_relative 'post'
 require_relative 'hero_banner'
 require_relative 'image'
+require_relative 'inline'
 require_relative 'category'
 require_relative 'tag'
 require_relative 'post_category_domain'
@@ -26,6 +27,10 @@ module Contentful
 
         def export_blog
           Blog.new(wordpress_xml, settings).blog_extractor
+        end
+
+        def export_inline
+          Inline.new(wordpress_xml, settings).inline_extractor
         end
       end
     end

@@ -42,5 +42,12 @@ Escort::App.create do |app|
         Command::CLI.new(options, arguments).execute
       end
     end
+
+    app.command '--parse-inline-images' do |command|
+      command.summary 'Parse inline images into attachments'
+      command.action do |options, arguments|
+        Command::CLI.new(options, arguments).execute
+      end
+    end
   end
 end

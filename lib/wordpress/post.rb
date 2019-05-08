@@ -4,11 +4,16 @@ module Contentful
   module Exporter
     module Wordpress
       class Post < Blog
-        attr_reader :xml, :settings
+        attr_reader :xml, :settings, :inline_images
 
         def initialize(xml, settings)
           @xml = xml
           @settings = settings
+          @inline_images = {}
+
+          CSV.foreach("#{settings.data_dir}/all_assets.csv", :headers => true, :header_converters => :symbol, :converters => :all) do |row|
+            @inline_images[row.fields[0]] = Hash[row.headers.zip(row.fields)]
+          end
         end
 
         def post_extractor
@@ -85,7 +90,7 @@ module Contentful
         end
 
         def content(post_xml)
-          post_xml.xpath('content:encoded').text
+          replace_inline(post_xml.xpath('content:encoded').text, post_xml)
         end
 
         def created_at(post_xml)
@@ -95,6 +100,18 @@ module Contentful
           end
           output_logger.warn "Post <#{post_id(post_xml)}> didn't have Creation Date - defaulting to #{Date.today}"
           Date.today
+        end
+
+        def replace_inline(content, post_xml)
+          doc = Nokogiri::HTML.fragment(content)
+          doc.css("img").each_with_index do |img, key|
+            if img['src'].include? "wp-content/uploads"
+              img_id = "image_inline_#{post_xml.xpath('wp:post_id').text}_#{key}"
+              output_logger.info 'Replacing inline image...'
+              img.attributes["src"].value = @inline_images[img_id][:url]
+            end
+          end
+          doc.to_html
         end
       end
     end

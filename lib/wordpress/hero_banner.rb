@@ -22,10 +22,10 @@ module Contentful
         def extract_posts
           posts.each_with_object([]) do |post_xml, posts|
             thumbnail_id = thumbnail_id(post_xml)
-            if thumbnail_id != ''
+            if thumbnail_id != '' && !thumbnail_id.nil?
               attachment_xml = xml.search("//item[child::wp:post_id[text()=#{thumbnail_id}]]").first
               unless attachment_xml.nil?
-                normalized_post = extract_data(attachment_xml)
+                normalized_post = extract_data(attachment_xml, post_xml)
                 write_json_to_file("#{settings.entries_dir}/hero_banner/#{hero_id(attachment_xml)}.json", normalized_post)
                 posts << normalized_post
               end
@@ -37,20 +37,12 @@ module Contentful
           xml.search("//item[child::wp:post_type[text()[contains(., 'post')]]]").to_a
         end
 
-        def extract_data(attachment_xml)
+        def extract_data(attachment_xml, post_xml)
           {
               id: hero_id(attachment_xml),
-              title: title(attachment_xml),
+              title: title(post_xml),
               template: link_entry({id: settings.contentful_hero_template_id}),
               image: link_asset({id: image_id(attachment_xml)}),
-          }
-        end
-
-        def basic_post_data(attachment_xml)
-          {
-              id: hero_id(attachment_xml),
-              title: title(attachment_xml),
-              template: link_entry({id: settings.contentful_hero_template_id}),
           }
         end
 
@@ -58,8 +50,8 @@ module Contentful
           "hero_banner_#{attachment_xml.xpath('wp:post_id').text}"
         end
 
-        def title(attachment_xml)
-          attachment_xml.xpath('title').text
+        def title(post_xml)
+          post_xml.xpath('title').text
         end
 
         def image_id(attachment_xml)

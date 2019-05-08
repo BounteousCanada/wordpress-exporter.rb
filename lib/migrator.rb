@@ -25,6 +25,8 @@ class Migrator
         converter.create_content_type_json
       when '--convert-markup'
         markup_converter.convert_markup_to_markdown
+      when '--parse-inline-images'
+        exporter.export_inline
     end
   end
 end

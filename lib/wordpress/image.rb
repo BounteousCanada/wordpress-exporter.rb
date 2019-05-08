@@ -24,7 +24,7 @@ module Contentful
         private
 
         def attachment_url
-          post.at_xpath('wp:attachment_url').text unless post.at_xpath('wp:attachment_url').nil?
+          post.at_xpath('wp:attachment_url').text.gsub(".pdf", "-pdf.jpg") unless post.at_xpath('wp:attachment_url').nil?
         end
 
         def attachment_id
@@ -33,7 +33,7 @@ module Contentful
 
         def attachment_filename
           filename = post.xpath('.//wp:meta_key[contains(text(), "_wp_attached_file")]').first
-          filename ? filename.parent.at_xpath('wp:meta_value').text.gsub("/", "-") : post.xpath('title').text
+          filename ? filename.parent.at_xpath('wp:meta_value').text.gsub("/", "-").gsub(".pdf", "-pdf.jpg") : post.xpath('title').text
         end
 
         def attachment_description
