@@ -11,8 +11,10 @@ module Contentful
           @settings = settings
           @inline_images = {}
 
-          CSV.foreach("#{settings.data_dir}/all_assets.csv", :headers => true, :header_converters => :symbol, :converters => :all) do |row|
-            @inline_images[row.fields[0]] = Hash[row.headers.zip(row.fields)]
+          if File.exist? "#{settings.data_dir}/all_assets.csv"
+            CSV.foreach("#{settings.data_dir}/all_assets.csv", :headers => true, :header_converters => :symbol, :converters => :all) do |row|
+              @inline_images[row.fields[0]] = Hash[row.headers.zip(row.fields)]
+            end
           end
         end
 
@@ -117,8 +119,10 @@ module Contentful
             if a['href'].present? && a['href'].include?("wp-content/uploads") && a['href'].end_with?(".jpg",".jpeg",".png",".bmp",".gif")
               filename_hash = Digest::MD5.hexdigest(filename(a['href']))
               a_id = "image_inline_#{post_xml.xpath('wp:post_id').text}_#{filename_hash}"
-              output_logger.info 'Replacing inline anchor image...'
-              img.attributes["src"].value = @inline_images[a_id][:url]
+              if  @inline_images[a_id].present?
+                output_logger.info 'Replacing inline anchor image...'
+                img.attributes["src"].value = @inline_images[a_id][:url]
+              end
             end
           end
           doc.to_html
