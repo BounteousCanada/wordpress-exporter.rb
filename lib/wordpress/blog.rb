@@ -74,6 +74,8 @@ module Contentful
               id: Digest::MD5.hexdigest(blog_id(post_xml)),
               title: title(post_xml),
               description: excerpt(post_xml),
+              meta_keywords: meta_keywords(post_xml),
+              meta_description: excerpt(post_xml),
               url: slug(post_xml),
               components: hero_id == '' ? link_entry([{id: post_id(post_xml)}]) : link_entry([{id: hero_id}, {id: post_id(post_xml)}])
           }
@@ -171,6 +173,15 @@ module Contentful
 
         def extract_tags
           Tag.new(xml, settings).tags_extractor
+        end
+
+        def meta_keywords(post_xml)
+          keyword_list = []
+          post_xml.css('category[domain=post_tag]').to_a.each_with_object([]) do |tag, tags|
+            keyword_list << tag.text
+          end
+
+          keyword_list.join(' ')
         end
       end
     end

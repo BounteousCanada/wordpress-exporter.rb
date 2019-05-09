@@ -8,6 +8,8 @@
       "title": "Symbol",
       "url": "Symbol",
       "description": "Text",
+      "meta_keywords": "Text",
+      "meta_description": "Text",
       "thumbnail": {
         "id": "thumbnail",
         "type": "Asset",
