@@ -106,12 +106,27 @@ module Contentful
           doc = Nokogiri::HTML.fragment(content)
           doc.css("img").each_with_index do |img, key|
             if img['src'].include? "wp-content/uploads"
-              img_id = "image_inline_#{post_xml.xpath('wp:post_id').text}_#{key}"
+              filename_hash = Digest::MD5.hexdigest(filename(img['src']))
+              img_id = "image_inline_#{post_xml.xpath('wp:post_id').text}_#{filename_hash}"
               output_logger.info 'Replacing inline image...'
               img.attributes["src"].value = @inline_images[img_id][:url]
             end
           end
+
+          doc.css("a").each_with_index do |a, key|
+            if a['href'].present? && a['href'].include?("wp-content/uploads") && a['href'].end_with?(".jpg",".jpeg",".png",".bmp",".gif")
+              filename_hash = Digest::MD5.hexdigest(filename(a['href']))
+              a_id = "image_inline_#{post_xml.xpath('wp:post_id').text}_#{filename_hash}"
+              output_logger.info 'Replacing inline anchor image...'
+              img.attributes["src"].value = @inline_images[a_id][:url]
+            end
+          end
           doc.to_html
+        end
+
+        def filename(img_url)
+          filename = img_url.split('wp-content/uploads/')
+          filename[1].gsub("/", "-")
         end
       end
     end

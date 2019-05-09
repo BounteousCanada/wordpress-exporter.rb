@@ -23,8 +23,14 @@ module Contentful
           posts.each_with_object([]) do |post_xml, posts|
             content = post_xml.xpath('content:encoded').text
             doc = Nokogiri::HTML(content)
+            #Extract Images from img tags
             images = doc.css('img').map {|i| extract_images(i)}
             attachment_extractor(images.reject(&:empty?), post_xml)
+
+            # Extract Images from a tags
+            images = doc.css('a').map {|i| extract_anchors(i)}
+            attachment_extractor(images.reject(&:empty?), post_xml)
+
           end
         end
 
@@ -46,19 +52,38 @@ module Contentful
           end
         end
 
+        def extract_anchors(a)
+          if a['href'].present? && a['href'].include?("wp-content/uploads") && a['href'].end_with?(".jpg",".jpeg",".png",".bmp",".gif")
+            {
+                id: '',
+                name: filename(a['href']).split('.')[0],
+                fileName: filename(a['href']),
+                description: '',
+                url: a['href'].gsub("https", "http")
+            }
+          else
+            ""
+          end
+        end
+
         def attachment_extractor(images, post_xml)
-          images.each_with_index do |inline_image, key|
-            image_id = image_id(post_xml, key)
-            inline_image.merge!({id: image_id})
+          images.each do |inline_image|
             unless inline_image[:url].nil?
-              write_json_to_file("#{settings.assets_dir}/image/#{image_id}.json", inline_image)
-              inline_image
+              filename_hash = Digest::MD5.hexdigest(filename(inline_image[:url]))
+              image_id = image_id(post_xml, filename_hash)
+              if File.exist?("#{settings.assets_dir}/image/#{image_id}.json")
+                output_logger.info "Already exists, skipping #{image_id}"
+              else
+                inline_image.merge!({id: image_id})
+                write_json_to_file("#{settings.assets_dir}/image/#{image_id}.json", inline_image)
+                inline_image
+              end
             end
           end
         end
 
-        def image_id(post_xml, key)
-          "image_inline_#{post_xml.xpath('wp:post_id').text}_#{key}"
+        def image_id(post_xml, filename_hash)
+          "image_inline_#{post_xml.xpath('wp:post_id').text}_#{filename_hash}"
         end
 
         def filename(img_url)
