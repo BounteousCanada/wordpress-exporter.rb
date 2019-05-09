@@ -52,10 +52,12 @@ module Contentful
           blog_domains(domain_path).each do |blog_domain|
             return id(blog_domain, prefix_id) if name(blog_domain, name_path) == domain.text
           end
+          ''
         end
 
         def normalized_data(domain, path)
-          { id: domain_id(domain, path) }
+          id = domain_id(domain, path)
+          id == '' ? {} : { id: id }
         end
 
         def prefix_id(domain_path)
