@@ -4,11 +4,14 @@ module Contentful
   module Exporter
     module Wordpress
       class Post < Blog
-        attr_reader :xml, :settings, :inline_images
+        attr_reader :xml, :settings, :inline_images, :modify, :tags, :categories
 
-        def initialize(xml, settings)
+        def initialize(xml, settings, modify, tags, categories)
           @xml = xml
           @settings = settings
+          @modify = modify
+          @tags = tags
+          @categories = categories
           @inline_images = {}
 
           if File.exist? "#{settings.data_dir}/all_assets.csv"
@@ -32,9 +35,11 @@ module Contentful
 
         def extract_posts
           posts.each_with_object([]) do |post_xml, posts|
+            if settings.wordpress_modify_csv == '' || settings.wordpress_modify_skip == false || modify[post_xml.xpath('wp:post_id').text  ].present?
               normalized_post = extract_data(post_xml)
               write_json_to_file("#{settings.entries_dir}/post/#{post_id(post_xml)}.json", normalized_post)
               posts << normalized_post
+            end
           end
         end
 
@@ -52,12 +57,12 @@ module Contentful
           PostAuthor.new(xml, post_xml, settings).author_extractor
         end
 
-        def tags(post_xml)
-          PostCategoryDomain.new(xml, post_xml, settings).extract_tags
+        def get_tags(post_xml)
+          PostCategoryDomain.new(xml, post_xml, settings, modify, tags, categories).extract_tags
         end
 
-        def categories(post_xml)
-          PostCategoryDomain.new(xml, post_xml, settings).extract_categories
+        def get_categories(post_xml)
+          PostCategoryDomain.new(xml, post_xml, settings, modify, tags, categories).extract_categories
         end
 
         def basic_post_data(post_xml)
@@ -72,11 +77,11 @@ module Contentful
         end
 
         def assign_content_elements_to_post(post_xml, post_entry)
-          tags = link_entry(tags(post_xml))
-          categories = link_entry(categories(post_xml))
+          generated_tags = link_entry(get_tags(post_xml))
+          generated_categories = link_entry(get_categories(post_xml))
           post_entry.merge!(author: link_entry(author(post_xml)))
-          post_entry.merge!(tags: tags) unless tags.empty?
-          post_entry.merge!(categories: categories) unless categories.empty?
+          post_entry.merge!(tags: generated_tags) unless generated_tags.empty?
+          post_entry.merge!(categories: generated_categories) unless generated_categories.empty?
         end
 
         def title(post_xml)
@@ -92,7 +97,7 @@ module Contentful
         end
 
         def content(post_xml)
-          replace_inline(post_xml.xpath('content:encoded').text, post_xml)
+          replace_inline(post_xml.xpath('content:encoded').text.gsub(/\n/, "\n<br />"), post_xml)
         end
 
         def created_at(post_xml)
@@ -110,8 +115,10 @@ module Contentful
             if img['src'].include? "wp-content/uploads"
               filename_hash = Digest::MD5.hexdigest(filename(img['src']))
               img_id = "image_inline_#{post_xml.xpath('wp:post_id').text}_#{filename_hash}"
-              output_logger.info 'Replacing inline image...'
-              img.attributes["src"].value = @inline_images[img_id][:url]
+              if inline_images[img_id].present?
+                output_logger.info 'Replacing inline image...'
+                img.attributes["src"].value = inline_images[img_id][:url]
+              end
             end
           end
 
@@ -119,9 +126,9 @@ module Contentful
             if a['href'].present? && a['href'].include?("wp-content/uploads") && a['href'].end_with?(".jpg",".jpeg",".png",".bmp",".gif")
               filename_hash = Digest::MD5.hexdigest(filename(a['href']))
               a_id = "image_inline_#{post_xml.xpath('wp:post_id').text}_#{filename_hash}"
-              if  @inline_images[a_id].present?
+              if inline_images[a_id].present?
                 output_logger.info 'Replacing inline anchor image...'
-                img.attributes["src"].value = @inline_images[a_id][:url]
+                a.attributes["href"].value = inline_images[a_id][:url]
               end
             end
           end

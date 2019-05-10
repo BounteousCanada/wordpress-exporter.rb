@@ -14,3 +14,13 @@ contentful_structure_dir: wordpress_settings/default_contentful_structure.json
 
 contentful_hero_template_id: "<hero_template_id>"
 contentful_post_template_id: "<post_template_id>"
+
+# Provide a csv file with columns id, categories and tags to modify the wordpress blog during import
+wordpress_modify_csv: modify.csv
+
+# If using a `modify csv`, skip importing posts that are not found in the csv
+wordpress_modify_skip: true
+
+# If using a `modify csv`, skip importing old tags/categories and only use the ones provided in the csv
+wordpress_modify_skip_old_tags: false
+wordpress_modify_skip_old_categories: false

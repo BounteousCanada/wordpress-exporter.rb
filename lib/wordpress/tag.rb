@@ -4,11 +4,12 @@ module Contentful
   module Exporter
     module Wordpress
       class Tag < Blog
-        attr_reader :xml, :settings
+        attr_reader :xml, :settings, :tags
 
-        def initialize(xml, settings)
+        def initialize(xml, settings, tags)
           @xml = xml
           @settings = settings
+          @tags = tags
         end
 
         def tags_extractor
@@ -20,22 +21,22 @@ module Contentful
         private
 
         def extract_tags
-          tags.each_with_object([]) do |tag, tags|
-            normalized_tag = extracted_data(tag)
-            write_json_to_file("#{settings.entries_dir}/tag/#{id(tag)}.json", normalized_tag)
-            tags << normalized_tag
-          end
+          xml_tags.each_with_object([]) do |tag, xml_tags|
+            write_json_to_file("#{settings.entries_dir}/tag/#{id(tag)}.json", extracted_data(tag))
+          end unless settings.wordpress_modify_skip_old_tags
+
+          additional_tags
         end
 
         def extracted_data(tag)
           {
-            id: id(tag),
-            display_name: slug(tag),
-            name: name(tag)
+              id: id(tag),
+              display_name: name(tag),
+              name: slug(tag)
           }
         end
 
-        def tags
+        def xml_tags
           xml.xpath('//wp:tag').to_a
         end
 
@@ -49,6 +50,17 @@ module Contentful
 
         def name(tag)
           tag.xpath('wp:tag_name').text
+        end
+
+        def additional_tags
+          tags.each_with_index do |value, key|
+            tag = {
+                id: "tag_new_#{key}",
+                display_name: value,
+                name: value.downcase.gsub(' ', '-')
+            }
+            write_json_to_file("#{settings.entries_dir}/tag/tag_new_#{key}.json", tag)
+          end
         end
       end
     end

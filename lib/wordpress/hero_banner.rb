@@ -22,7 +22,7 @@ module Contentful
         def extract_posts
           posts.each_with_object([]) do |post_xml, posts|
             thumbnail_id = thumbnail_id(post_xml)
-            if thumbnail_id != '' && !thumbnail_id.nil?
+            unless thumbnail_id == '' || thumbnail_id.nil?
               attachment_xml = xml.search("//item[child::wp:post_id[text()=#{thumbnail_id}]]").first
               unless attachment_xml.nil?
                 normalized_post = extract_data(attachment_xml, post_xml)

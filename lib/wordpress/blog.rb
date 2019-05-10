@@ -7,11 +7,25 @@ module Contentful
   module Exporter
     module Wordpress
       class Blog
-        attr_reader :xml, :settings
+        attr_reader :xml, :settings, :modify, :tags, :categories
 
         def initialize(xml_document, settings)
           @xml = xml_document
           @settings = settings
+          @modify = {}
+          @tags = []
+          @categories = []
+
+          if File.exist? "#{settings.wordpress_modify_csv}"
+            CSV.foreach("#{settings.wordpress_modify_csv}", :headers => true, :header_converters => :symbol, :converters => :all) do |row|
+              @modify["#{row.fields[0]}"] = Hash[row.headers.zip(row.fields)]
+              @tags = (tags | modify["#{row.fields[0]}"][:tags].split('|').collect(&:strip)) unless modify["#{row.fields[0]}"][:tags].nil?
+              @categories = (categories | modify["#{row.fields[0]}"][:categories].split('|').collect(&:strip)) unless modify["#{row.fields[0]}"][:categories].nil?
+            end
+
+            filter_tags unless settings.wordpress_modify_skip_old_tags
+            filter_categories unless settings.wordpress_modify_skip_old_categories
+          end
         end
 
         def blog_extractor
@@ -58,13 +72,28 @@ module Contentful
 
         private
 
+        def filter_tags
+          xml.search("//wp:tag[child::wp:tag_name]").to_a.each_with_object([]) do |tag|
+            tags.delete(tag.xpath('wp:tag_name').text)
+          end
+        end
+
+        def filter_categories
+          xml.search("//wp:category[child::wp:category_nicename]").to_a.each_with_object([]) do |category|
+            categories.delete(category.xpath('wp:category_nicename').text)
+          end
+        end
+
         def extract_blog
           output_logger.info('Extracting blog data...')
           create_directory("#{settings.entries_dir}/blog")
           posts.each_with_object([]) do |post_xml, posts|
-            blog = extracted_data(post_xml)
-            assign_extra_elements_to_blog(post_xml, blog)
-            write_json_to_file("#{settings.entries_dir}/blog/#{blog_id(post_xml)}.json", blog)
+            post_id = post_xml.xpath('wp:post_id').text
+            if settings.wordpress_modify_csv == '' || settings.wordpress_modify_skip == false || modify[post_id].present?
+              blog = extracted_data(post_xml)
+              assign_extra_elements_to_blog(post_xml, blog)
+              write_json_to_file("#{settings.entries_dir}/blog/#{blog_id(post_xml)}.json", blog)
+            end
           end
         end
 
@@ -88,7 +117,7 @@ module Contentful
 
         def thumbnail_attachment(post_xml)
           thumbnail_id = thumbnail_id(post_xml)
-          if thumbnail_id != '' && !thumbnail_id.nil?
+          unless thumbnail_id == '' || thumbnail_id.nil?
             thumbnail = xml.search("//item[child::wp:post_id[text()=#{thumbnail_id}]]").first
             Image.new(thumbnail, settings).attachment_extractor unless thumbnail.nil?
           end
@@ -109,34 +138,32 @@ module Contentful
 
         def hero_id(post_xml)
           post_id = thumbnail_id(post_xml)
-          if post_id != '' && !post_id.nil?
+          unless post_id == '' || post_id.nil?
             hero = xml.search("//item[child::wp:post_id[text()=#{post_id}]]").first
             hero ? "hero_banner_#{hero.xpath('wp:post_id').text}" : ''
-          else
-            ''
           end
         end
 
         def excerpt(post_xml)
-          truncate(post_xml.xpath('content:encoded').text,55)
+          truncate(post_xml.xpath('content:encoded').text, 55)
         end
 
         def truncate(content, max)
           doc = Nokogiri::HTML(content)
-          content = doc.xpath("//text()").remove.text.split(" ")
-          if content.length > max
-            truncated = ""
-            collector = 0
-            content.each do |word|
-              word = word + " "
-              collector+=1
-              truncated << word if collector.to_i < max
-            end
-            truncated = truncated.strip.chomp(",").concat("...")
-          else
-            truncated = content
+          content = doc.xpath("//text()").text.split(" ")
+          if content.length < max
+            return content.join(' ')
           end
-          return truncated
+
+          truncated = ""
+          collector = 0
+          content.each do |word|
+            word = word + " "
+            collector += 1
+            truncated << word if collector.to_i < max
+          end
+
+          truncated.strip.chomp(",") << "..."
         end
 
         def title(post_xml)
@@ -160,7 +187,7 @@ module Contentful
         end
 
         def extract_posts
-          Post.new(xml, settings).post_extractor
+          Post.new(xml, settings, modify, tags, categories).post_extractor
         end
 
         def extract_hero_banners
@@ -168,11 +195,11 @@ module Contentful
         end
 
         def extract_categories
-          Category.new(xml, settings).categories_extractor
+          Category.new(xml, settings, categories).categories_extractor
         end
 
         def extract_tags
-          Tag.new(xml, settings).tags_extractor
+          Tag.new(xml, settings, tags).tags_extractor
         end
 
         def meta_keywords(post_xml)
@@ -181,7 +208,7 @@ module Contentful
             keyword_list << tag.text
           end
 
-          keyword_list.join(' ')
+          keyword_list.join(', ')
         end
       end
     end

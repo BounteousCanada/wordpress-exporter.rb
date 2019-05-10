@@ -9,6 +9,10 @@ module Contentful
                 :wordpress_xml,
                 :contentful_post_template_id,
                 :contentful_hero_template_id,
+                :wordpress_modify_csv,
+                :wordpress_modify_skip,
+                :wordpress_modify_skip_old_tags,
+                :wordpress_modify_skip_old_categories,
                 :settings
 
     def initialize(settings)
@@ -22,6 +26,10 @@ module Contentful
       @space_id = settings['space_id']
       @contentful_post_template_id = settings['contentful_post_template_id']
       @contentful_hero_template_id = settings['contentful_hero_template_id']
+      @wordpress_modify_csv = settings['wordpress_modify_csv'].present? ? settings['wordpress_modify_csv'] : ''
+      @wordpress_modify_skip = settings['wordpress_modify_skip'].present? ? settings['wordpress_modify_skip'] : false
+      @wordpress_modify_skip_old_tags = settings['wordpress_modify_skip_old_tags'].present? ? settings['wordpress_modify_skip_old_tags'] : false
+      @wordpress_modify_skip_old_categories = settings['wordpress_modify_skip_old_categories'].present? ? settings['wordpress_modify_skip_old_tags'] : false
       @space_id = settings['space_id']
     end
 

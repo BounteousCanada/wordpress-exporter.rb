@@ -4,28 +4,51 @@ module Contentful
   module Exporter
     module Wordpress
       class PostCategoryDomain < Post
-        attr_reader :post, :xml, :settings
+        attr_reader :post, :xml, :settings, :modify, :tags, :categories
 
-        def initialize(xml, post, settings)
+        def initialize(xml, post, settings, modify, tags, categories)
           @xml = xml
           @post = post
           @settings = settings
+          @modify = modify
+          @tags = tags
+          @categories = categories
         end
 
         def extract_tags
           output_logger.info 'Extracting post tags...'
-          post_domains('category[domain=post_tag]').each_with_object([]) do |tag, tags|
+          extract_tags = []
+          post_id = post.xpath('wp:post_id').text
+          post_domains('category[domain=post_tag]').each_with_object([]) do |tag|
             normalized_tag = normalized_data(tag, '//wp:tag')
-            tags << normalized_tag unless normalized_tag.empty?
+            extract_tags << normalized_tag unless normalized_tag.empty?
+          end unless settings.wordpress_modify_skip || modify[post_id].present?
+
+          if modify[post_id].present?
+            modify[post_id][:tags].split('|').each do |tag|
+              extract_tags << {id: "tag_new_#{tags.index(tag.strip)}"}
+            end unless modify[post_id][:tags].nil?
           end
+
+          extract_tags
         end
 
         def extract_categories
           output_logger.info 'Extracting post categories...'
-          post_domains('category[domain=category]').each_with_object([]) do |category, categories|
+          extract_categories = []
+          post_id = post.xpath('wp:post_id').text
+          post_domains('category[domain=category]').each_with_object([]) do |category|
             normalized_categories = normalized_data(category, '//wp:category')
-            categories << normalized_categories unless normalized_categories.empty?
+            extract_categories << normalized_categories unless normalized_categories.empty?
+          end unless settings.wordpress_modify_skip || modify[post_id].present?
+
+          if modify[post_id].present?
+            modify[post_id][:categories].split('|').each do |category|
+              extract_categories << {id: "category_new_#{categories.index(category.strip)}"}
+            end unless modify[post_id][:categories].nil?
           end
+
+          extract_categories
         end
 
         private
